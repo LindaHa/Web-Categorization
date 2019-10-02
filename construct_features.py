@@ -35,19 +35,21 @@ def crawl(object):
         tokens = [token.lower() for token in word_tokenize(text)]
         # Remove stopwords
         tokens_lemmatize = remove_stopwords(tokens)
-    except Exception:
-        print(f"{object['i']}/{len(urls)} || {object['url']} FAILED. ")
+    except Exception as inst:
+        print(f"{object['i']}/{len(urls)} || {object['url']} FAILED. because of {inst}")
     return tokens_lemmatize if len(tokens_lemmatize) else ''
     #     return page_tokens[object['i']]
 
-date = '2019-05-05'
+
+date = '2019-02-10'
 input_path = f'Datasets/URL-categorization-DFE.csv'
 output_path = f'Datasets/Feature_dataset_{date}.csv'
-if not os.path.isfile(output_path):
+if True or not os.path.isfile(output_path):
+    from pprint import pprint
+    import sys
     df = pd.read_csv(input_path)[['url', 'main_category', 'main_category:confidence']]
     df = df[(df['main_category'] != 'Not_working') & (df['main_category:confidence'] >= 0.5)]
     df['url'] = df['url'].map(lambda x: 'http://' + x)
-    date = date.today().strftime("%Y-%m-%d")
 
     hdr = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
