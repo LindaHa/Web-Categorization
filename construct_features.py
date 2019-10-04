@@ -19,7 +19,7 @@ def remove_stopwords(tokens):
 
 
 def crawl(object):
-    print(f"{object['i']}/{len(urls)} || {object['url']}")
+    print(f"{object['i']}/{len(original_urls)} || {object['url']}")
     tokens_lemmatize = ''
     try:
         req = urllib.request.Request(object['url'], headers=hdr)
@@ -28,6 +28,15 @@ def crawl(object):
         [tag.decompose() for tag in soup("script")]
         [tag.decompose() for tag in soup("style")]
         text = soup.get_text()
+        tokens_lemmatize = tokenize(text)
+    except Exception as inst:
+        print(f"{object['i']}/{len(original_urls)} || {object['url']} FAILED. because of {inst}")
+    return tokens_lemmatize
+
+
+def tokenize(text):
+    tokens_lemmatize = ''
+    try:
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
         text = '\n'.join(chunk.lower() for chunk in chunks if chunk)
@@ -36,20 +45,31 @@ def crawl(object):
         # Remove stopwords
         tokens_lemmatize = remove_stopwords(tokens)
     except Exception as inst:
-        print(f"{object['i']}/{len(urls)} || {object['url']} FAILED. because of {inst}")
+        print(f"FAILED. because of {inst}")
     return tokens_lemmatize if len(tokens_lemmatize) else ''
     #     return page_tokens[object['i']]
 
 
+def offline_crawl(object):
+    tokens_lemmatize = ''
+    try:
+        text = object['content']
+        tokens_lemmatize = tokenize(text)
+    except Exception as inst:
+        print(f"{object['i']} || {object['url']} FAILED. because of {inst}")
+    return tokens_lemmatize
+
+
 date = '2019-02-10'
-input_path = f'Datasets/URL-categorization-DFE.csv'
+original_path = f'Datasets/URL-categorization-DFE.csv'
+dark_web_path = f'Datasets/dark_web_dataset.csv'
 output_path = f'Datasets/Feature_dataset_{date}.csv'
 if True or not os.path.isfile(output_path):
-    from pprint import pprint
-    import sys
-    df = pd.read_csv(input_path)[['url', 'main_category', 'main_category:confidence']]
-    df = df[(df['main_category'] != 'Not_working') & (df['main_category:confidence'] >= 0.5)]
-    df['url'] = df['url'].map(lambda x: 'http://' + x)
+    original_data = pd.read_csv(original_path)[['url', 'main_category', 'main_category:confidence']]
+    original_data['url'] = original_data['url'].map(lambda x: 'http://' + x)
+    original_data = original_data[(original_data['main_category'] != 'Not_working') & (original_data['main_category:confidence'] >= 0.5)]
+    dark_web_data = pd.read_csv(dark_web_path)[['url', 'main_category', 'main_category:confidence', 'content']]
+    dark_web_data = dark_web_data[(dark_web_data['main_category'] != 'Not_working') & (dark_web_data['main_category:confidence'] >= 0.5)]
 
     hdr = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
@@ -66,11 +86,27 @@ if True or not os.path.isfile(output_path):
 
     start = datetime.datetime.now()
     print(start)
-    urls = [{"i": index, "url": url} for index, url in enumerate(list(df['url'].values))]
-    df['tokens'] = ''
+    original_urls = [{
+        "i": index,
+        "url": url
+    } for index, url in enumerate(list(original_data['url'].values)) if index < 10]
+
+    dark_urls = [{
+        "i": index,
+        "url": row['url'],
+        "content": row['content']
+    } for (index, row) in dark_web_data.iterrows()]
+
+    original_data['tokens'] = ''
+    dark_web_data['tokens'] = ''
     p = Pool(cpu_count() * 2)
-    tokens = p.map(crawl, urls)
-    df['tokens'][:len(tokens)] = tokens
+    tokens = p.map(crawl, original_urls)
+    dark_tokens = p.map(offline_crawl, dark_urls)
+    original_data['tokens'][:len(tokens)] = tokens
+    dark_web_data['tokens'][:len(dark_tokens)] = dark_tokens
+    dark_web_data = dark_web_data.drop(columns="content")
+
+    df = original_data.append(dark_web_data)
     stop = datetime.datetime.now()
     print(stop)
     exec_time = stop - start
