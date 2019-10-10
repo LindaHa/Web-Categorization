@@ -5,12 +5,11 @@ import ast
 from collections import Counter
 import pickle
 
-date = '2019-05-05'
+date = '2019-02-10'
 input_path = f'Datasets/Translated_tokens_{date}.csv'
 output_path = f'Models/Models_LR_{date}.joblib'
-words_path = f'Frequency_models/word_frequency_2019-05-05.picle'
-if os.path.isfile(input_path) and os.path.isfile(words_path) and not os.path.isfile(output_path):
-
+words_path = f'Frequency_models/word_frequency_{date}.picle'
+if os.path.isfile(input_path) and os.path.isfile(words_path):
     df = pd.read_csv(input_path)
     pickle_in = open(words_path,"rb")
     words_frequency = pickle.load(pickle_in)
