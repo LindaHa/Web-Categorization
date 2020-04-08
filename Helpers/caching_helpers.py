@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 import redis
 import pickle
 from Helpers.Models.page_model import Page
@@ -24,3 +24,9 @@ def get_cached_all_pages() -> Dict[str, Page]:
 
 def cache_all_pages(pages: Dict[str, Page]) -> None:
     redis_cache_complex_object('all_pages', pages)
+
+
+page_shelf_name = 'backup_db_response'
+page_shelf_key_prefix = 'pages_batch_'
+page_shelf_batch_count = 'backed_up'
+pages_no_content = 'pages_without_content'

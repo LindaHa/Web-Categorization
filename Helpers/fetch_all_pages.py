@@ -1,7 +1,6 @@
 import requests
 from typing import Dict, Union
 from Helpers.Models.page_model import Page
-from Helpers.caching_helpers import get_cached_all_pages, cache_all_pages
 from Helpers.filter_invalid_links import filter_non_scraped_links
 from Helpers.parsers import get_scroll_id, get_pages_from_json, get_hits
 
@@ -20,20 +19,16 @@ class ElasticSearchRepository(object):
         }
         try:
             response = requests.post(self.server + "_search/scroll", json=payload)
-            print(response.status_code)
             response.raise_for_status()
-            print('text len')
-            print(len(response.text))
-            print('headers')
-            print(response.headers)
-        except requests.exceptions.HTTPError as errh:
-            print("Http Error:", errh)
-        except requests.exceptions.ConnectionError as errc:
-            print("Error Connecting:", errc)
-        except requests.exceptions.Timeout as errt:
-            print("Timeout Error:", errt)
-        except requests.exceptions.RequestException as err:
-            print("OOps: Something Else", err)
+        # except requests.exceptions.HTTPError as errh:
+        #     print("Http Error:", errh)
+        # except requests.exceptions.ConnectionError as errc:
+        #     print("Error Connecting:", errc)
+        # except requests.exceptions.Timeout as errt:
+        #     print("Timeout Error:", errt)
+        # except requests.exceptions.RequestException as err:
+        #     print("OOps: Something Else", err)
+        # except Exception as err:
         except Exception as err:
             print(f'Other error occurred: {err}')  # Python 3.6
         if response.status_code == 200:
@@ -42,10 +37,6 @@ class ElasticSearchRepository(object):
             return None
 
     def fetch_all(self) -> Dict[str, Page]:
-        all_pages_cached = get_cached_all_pages()
-        if all_pages_cached:
-            return all_pages_cached
-
         payload = {
             "size": CHUNK_SIZE,
             "query": {
@@ -79,7 +70,5 @@ class ElasticSearchRepository(object):
                 i += 1
 
         final_pages = filter_non_scraped_links(final_pages)
-
-        cache_all_pages(final_pages)
 
         return final_pages

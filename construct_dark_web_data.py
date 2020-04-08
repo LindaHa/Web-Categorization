@@ -1,14 +1,5 @@
-import datetime
-import csv
-import nltk
-import numpy as np
 import pandas as pd
-import ast
-from urllib.request import urlopen
-from bs4 import BeautifulSoup
-import os.path
 
-from typing import Dict, List
 
 from Helpers.fetch_all_pages import ElasticSearchRepository
 
@@ -23,13 +14,11 @@ def get_dark_web_data():
     domains = {}
     print('for')
     for page_url in all_pages:
-        if '.onion' in page_url and ' ' not in page_url:
-            domain_parts = page_url.split('.onion')[:-1]
-            domain = ''.join(domain_parts) + '.onion'
-            if domain not in domains:
-                domains[domain] = domain
-                pandas_row = [{'url': page_url, 'content': all_pages[page_url].content}]
-                df = df.append(pandas_row)
+        domain = get_domain(page_url)
+        if not not domain and domain not in domains:
+            domains[domain] = domain
+            pandas_row = [{'url': page_url, 'content': all_pages[page_url].content}]
+            df = df.append(pandas_row)
 
     print('output')
     df['category'] = ''
@@ -37,3 +26,33 @@ def get_dark_web_data():
 
 
 get_dark_web_data()
+
+
+def get_domain_of_index(network: str, page_url: str) -> str:
+    """
+    :param network: the network of the url, such as .onion or .i2p
+    :type network: str
+    :param page_url: the url of the page
+    :type page_url: str
+    :return: the domain
+    :rtype: str
+    """
+    if network in page_url and ' ' not in page_url:
+        domain_parts = page_url.split(network)[:-1]
+        domain = ''.join(domain_parts) + network
+
+        return domain
+
+
+def get_domain(page_url: str) -> str:
+    """
+    :param page_url: url of the page
+    :type page_url: str
+    :return: returns the domain of the page
+    :rtype: str
+    """
+    domain = get_domain_of_index('.onion', page_url)
+    if not domain:
+        get_domain_of_index('.i2p', page_url)
+
+    return domain
